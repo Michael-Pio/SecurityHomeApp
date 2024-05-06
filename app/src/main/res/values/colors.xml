@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="Temperature_HOT">#FF9800</color>
+    <color name="Temperature_NORMAL">#40FF00</color>
+    <color name="Temperature_COLD">#00BCD4</color>
+    <color name="red">#FF0000</color>
+    <color name="green">#3EFF00</color>
+    <color name="lightGreen">#7CD160</color>
+    <color name="lightRed">#D16060</color>
+    <color name="good">#00ff00</color>
+    <color name="neutral">#0000ff</color>
+    <color name="bad">#ff0000</color>
+</resources>
