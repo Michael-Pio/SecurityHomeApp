@@ -1,12 +1,3 @@
-<!-- write a github readme file for the following software:
-A LaserBased Home Security System used to Monitor the Threat of perimeter breach in the front of the house , it is controlled by a smart application written in java
-
-Features :
-Low Latency , uses free HiveMQ MQTT server , Syncronized with Mobile APP
-
-screenshot of APP UI (it needs some development in the Future)
-
-For Hardware setup Go and Refer this Github repo: [link] -->
 ## Laser-Based Home Security System APP
 
 This project implements a laser-based home security system that monitors the front of your house for potential perimeter breaches. It utilizes a low-latency communication system powered by the free HiveMQ MQTT server and synchronizes with a mobile application for real-time monitoring and control.
