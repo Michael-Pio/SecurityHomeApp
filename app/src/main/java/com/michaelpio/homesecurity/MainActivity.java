@@ -4,7 +4,9 @@ import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -23,7 +25,8 @@ public class MainActivity extends AppCompatActivity {
     private TemperatureHumidityUI temperatureHumidityUI;
     private IntruderUI intruderUI;
     private ArmDisarmUI armDisarmUI;
-
+    private AuthenticateUI authenticateUI;
+    private boolean isAuthenticated;
     ProgressBar progressBar;
 
     /*Component 1*/
@@ -157,16 +160,25 @@ public class MainActivity extends AppCompatActivity {
 
         void set_Listeners(){
             BTNarm.setOnClickListener(view -> {
-                deviceState.setIsArmed(true);
-                deviceState.setHumidity(deviceState.getHumidity().getValue()+3);
-                deviceState.setTemperature(deviceState.getTemperature().getValue()+1);
-                mqttClientManager.publishMessage("MainGate001/App/isARM","1",false);
+                if(isAuthenticated){
+                    deviceState.setIsArmed(true);
+                    deviceState.setHumidity(deviceState.getHumidity().getValue() + 3);
+                    deviceState.setTemperature(deviceState.getTemperature().getValue() + 1);
+                    mqttClientManager.publishMessage("MainGate001/App/isARM", "1", false);
+                }else{
+                    Toast.makeText(MainActivity.this, "Please Authenticate First", Toast.LENGTH_SHORT).show();
+                }
+
            });
             BTNdisarm.setOnClickListener(view -> {
-                deviceState.setHumidity(deviceState.getHumidity().getValue()-2);
-                deviceState.setTemperature(deviceState.getTemperature().getValue()-1);
-                deviceState.setIsArmed(false);
-                mqttClientManager.publishMessage("MainGate001/App/isARM","0",false);
+                if(isAuthenticated) {
+                    deviceState.setHumidity(deviceState.getHumidity().getValue() - 2);
+                    deviceState.setTemperature(deviceState.getTemperature().getValue() - 1);
+                    deviceState.setIsArmed(false);
+                    mqttClientManager.publishMessage("MainGate001/App/isARM", "0", false);
+                }else{
+                    Toast.makeText(MainActivity.this, "Please Authenticate First", Toast.LENGTH_SHORT).show();
+                }
            });
         }
 
@@ -182,9 +194,63 @@ public class MainActivity extends AppCompatActivity {
             cardARM.setCardBackgroundColor(tintColor);
 
         }
+
+    };
+
+    private class AuthenticateUI{
+        EditText ETNpassword;
+        Button BTNauthenticate;
+        TextView TV_LockPassword;
+        String AuthKey = "12345";
+
+
+        void init_UIElements(){
+            isAuthenticated = false;
+            ETNpassword = findViewById(R.id.ETNpassword);
+            BTNauthenticate = findViewById(R.id.BTNauthenticate);
+            TV_LockPassword = findViewById(R.id.TV_LockPassword);
+        }
+
+        void set_Listeners(){
+            BTNauthenticate.setOnClickListener(view ->{
+                if(isAuthenticated){
+                    unlockDoor();
+                }else{
+                    checkAuth();
+                }
+            });
+        }
+
+        private void checkAuth() {
+            String userPassword = ETNpassword.getText().toString().trim();
+            if(userPassword.equals(AuthKey)){
+                BTNauthenticate.setText("Unlock");
+                TV_LockPassword.setVisibility(View.GONE);
+                ETNpassword.setVisibility(View.GONE);
+                isAuthenticated = true;
+            }else{
+                Toast.makeText(MainActivity.this,"Wrong Password "+AuthKey,Toast.LENGTH_SHORT).show();
+                ETNpassword.setFocusable(true);
+            }
+        }
+
+        private void unlockDoor() {
+            boolean temp_prev_isArmed = deviceState.getIsArmed().getValue();
+
+            // Publish the initial message to disarm
+            mqttClientManager.publishMessage("MainGate001/App/isARM", "0",false);
+            deviceState.setIsArmed(false);
+            if(temp_prev_isArmed){
+                handler.postDelayed(()->{
+                    // Publish the Final message to armBack
+                    mqttClientManager.publishMessage("MainGate001/App/isARM", "1",false);
+                    deviceState.setIsArmed(true);
+                },10000);
+            }
+        }
     };
     private static final long TIMEOUT_DURATION = 10000; // 15 seconds timeout
-    Handler timeoutHandler = new Handler();
+    Handler handler = new Handler();
     private long lastAliveMessageReceivedTime = 0;
     HiveMQTTCloudClientManager mqttClientManager;
     @Override
@@ -254,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
                     mqttClientManager.publishMessage("MainGate001/App","Fetch Request",false);
                 }
                 });
-                timeoutHandler.postDelayed(() -> {
+                handler.postDelayed(() -> {
                     long currentTime = System.currentTimeMillis();
                     if (currentTime - lastAliveMessageReceivedTime > TIMEOUT_DURATION) {
                         // Timeout occurred, update device connection status
@@ -277,7 +343,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
                 // Schedule a new task to check for timeout
-                timeoutHandler.postDelayed(() -> {
+                handler.postDelayed(() -> {
                     long currentTime = System.currentTimeMillis();
                     if (currentTime - lastAliveMessageReceivedTime > TIMEOUT_DURATION) {
                         // Timeout occurred, update device connection status
@@ -297,17 +363,21 @@ public class MainActivity extends AppCompatActivity {
         temperatureHumidityUI = new TemperatureHumidityUI();
         intruderUI = new IntruderUI();
         armDisarmUI = new ArmDisarmUI();
+        authenticateUI = new AuthenticateUI();
+
 
         connectionStatusUI.init_UIElements();
         temperatureHumidityUI.init_UIElements();
         intruderUI.init_UIElements();
         armDisarmUI.init_UIElements();
+        authenticateUI.init_UIElements();
     }
 
     void SetupListeners(){
         connectionStatusUI.set_Listeners();
         intruderUI.set_Listeners();
         armDisarmUI.set_Listeners();
+        authenticateUI.set_Listeners();
 
         deviceState.getTemperature().observe(this, temperature -> {
             // Update UI with new temperature value
@@ -340,6 +410,12 @@ public class MainActivity extends AppCompatActivity {
             armDisarmUI.UpdateArmStatus(isArmed);
             Toast.makeText(this, (isArmed?"Device Armed":"Device DisArmed"), Toast.LENGTH_SHORT).show();
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mqttClientManager.disconnect();
     }
 }
 

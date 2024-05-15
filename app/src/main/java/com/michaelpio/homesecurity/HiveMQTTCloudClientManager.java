@@ -122,4 +122,8 @@ public class HiveMQTTCloudClientManager {
                     }
                 });
     }
+
+    public void disconnect() {
+        client.disconnect();
+    }
 }
