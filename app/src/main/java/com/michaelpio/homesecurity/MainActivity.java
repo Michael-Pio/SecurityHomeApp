@@ -16,8 +16,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
-
-
 public class MainActivity extends AppCompatActivity {
 
     DeviceState deviceState;
