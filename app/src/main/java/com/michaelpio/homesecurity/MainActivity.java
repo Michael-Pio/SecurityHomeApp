@@ -1,8 +1,11 @@
 package com.michaelpio.homesecurity;
 
+import android.app.Service;
+import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
@@ -13,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
@@ -266,6 +270,9 @@ public class MainActivity extends AppCompatActivity {
         mqttClientManager.subscribeToTopic("MainGate001/Device/Intruder");
         mqttClientManager.setMessageHandler(getMessageHandler());
 
+        //Enable Background Service
+        Intent serviceIntent = new Intent(this, MQTTBackgroundService.class);
+        startService(serviceIntent);
 
         InitUIComponents();
         SetupListeners();
@@ -415,6 +422,8 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         mqttClientManager.disconnect();
     }
+
+
 }
 
 
